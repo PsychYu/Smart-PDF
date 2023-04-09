@@ -38,8 +38,8 @@ def rename_pdf_files(input_folder, output_folder):  # PDFファイルのファ�
 
     for pdf_file in Path(input_folder).glob("*.pdf"):  # 入力フォルダ内のPDFファイルを順番に処理
         text = extract_text_from_pdf(str(pdf_file)).replace('\n', '')  # テキストを抽出し、改行を削除
-        system_prompt = f"ファイル名以外は出力しないでください。体言止めで返答してください。簡潔なファイル名のみを返答してください。日本語で返答してください。"  # システムプロンプトを生成
-        user_prompt = f"この文書のファイル名を考えてください。: {text[:800]}"  # ユーザープロンプトを生成
+        system_prompt = f"あなたは、短くてわかりやすいファイル名を提案する専門家です。ファイル名は日本語で、体言止めで表現し、簡潔にしてください。"  # システムプロンプトを生成
+        user_prompt = f"このPDF文書の内容に基づいて、適切なファイル名を提案してください。内容は次のとおりです: {text[:1000]}"  # ユーザープロンプトを生成
         print("ChatGPT APIを呼び出し中です・・・")
         title = generate_title_with_chatgpt(system_prompt, user_prompt)  # ChatGPTを使って題名を生成
         title = title.replace('「', '').replace('」', '')  # 鍵括弧を削除
