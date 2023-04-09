@@ -20,11 +20,12 @@ def extract_text_from_pdf(pdf_path):  # PDFファイルからテキストを抽�
             text += page.extract_text()
     return text
 
-def generate_title_with_chatgpt(prompt, model='gpt-3.5-turbo'):  # ChatGPTを使って題名を生成する関数
+def generate_title_with_chatgpt(system_prompt, user_prompt, model='gpt-3.5-turbo'):  # ChatGPTを使って題名を生成する関数
     response = openai.ChatCompletion.create(  # ChatGPT APIにリクエストを送る
         model=model,
         messages=[
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
         ]
     )
 
@@ -37,8 +38,12 @@ def rename_pdf_files(input_folder, output_folder):  # PDFファイルのファ�
 
     for pdf_file in Path(input_folder).glob("*.pdf"):  # 入力フォルダ内のPDFファイルを順番に処理
         text = extract_text_from_pdf(str(pdf_file)).replace('\n', '')  # テキストを抽出し、改行を削除
-        title_prompt = f"この文書のファイル名を考えてください。理由等は不要です。体言止めで一言で鍵括弧は付けずにファイル名のみを返してください。: {text[:1000]}"  # プロンプトを生成
-        title = generate_title_with_chatgpt(title_prompt)  # ChatGPTを使って題名を生成
+        system_prompt = f"ファイル名以外は出力しないでください。体言止めで返答してください。簡潔なファイル名のみを返答してください。日本語で返答してください。"  # システムプロンプトを生成
+        user_prompt = f"この文書のファイル名を考えてください。: {text[:800]}"  # ユーザープロンプトを生成
+        print("ChatGPT APIを呼び出し中です・・・")
+        title = generate_title_with_chatgpt(system_prompt, user_prompt)  # ChatGPTを使って題名を生成
+        title = title.replace('「', '').replace('」', '')  # 鍵括弧を削除
+        print("ChatGPT APIの呼び出しが完了しました。title: " + title)
         new_filename = f"{pdf_file.stem}_{title}{pdf_file.suffix}"  # 新しいファイル名を生成
         invalid_chars = set('<>:\"/\\|?*')  # 無効な文字のセットを定義
         new_filename = ''.join(c if c not in invalid_chars else '_' for c in new_filename)  # 無効な文字をアンダースコアに置き換え
