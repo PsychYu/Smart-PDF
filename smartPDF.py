@@ -6,20 +6,54 @@ import re  # 正規表現モジュールをインポート
 import tkinter as tk  # tkinterモジュールをtkとしてインポート
 from tkinter import messagebox  # tkinterモジュールからmessageboxをインポート
 from tkinter import filedialog  # フォルダ選択ダイアログをインポート
+import pytesseract # OCRモジュールをインポート
+from pdf2image import convert_from_path # PDFから画像を生成するモジュールをインポート
+import PyPDF4 # PyPDF4モジュールをインポート
 
 openai.api_key = os.environ["OPENAI_API_KEY"]  # 環境変数からOpenAI APIキーを取得
+
+# poppler/binを環境変数PATHに追加する
+poppler_dir = Path(__file__).parent.absolute() / "poppler/bin"
+os.environ["PATH"] += os.pathsep + str(poppler_dir)
+
+# Tesseract OCRをインストールしたパスを環境変数PATHに追加する
+path_tesseract = "C:\Program Files\Tesseract-OCR"
+os.environ["PATH"] += os.pathsep + path_tesseract
 
 def preprocess_text(text):  # テキストの前処理を行う関数
     text = re.sub(r'[!-@[-`{-~]', '', text)  # 記号を削除
     text = re.sub(r'\d', '', text)  # 数字を削除
     return text
 
-def extract_text_from_pdf(pdf_path):  # PDFファイルからテキストを抽出する関数
+def is_searchable_pdf(pdf_path): # PDFがサーチャブルかどうかを判定する関数
+    with open(pdf_path, 'rb') as f:
+        reader = PyPDF4.PdfFileReader(f)
+        for page_num in range(reader.getNumPages()):
+            page = reader.getPage(page_num)
+            text = page.extractText()
+            if text:  # ページからテキストが抽出できた場合、サーチャブルなPDFと判断
+                return True
+    return False  # テキストが抽出できなかった場合、非サーチャブルなPDFと判断
+
+def extract_text_from_serchable_pdf(pdf_path):  # サーチャブルPDFからテキストを抽出する関数
     with pdfplumber.open(pdf_path) as pdf:  # pdfファイルを開く
         text = ""
         for page in pdf.pages:  # ページごとにテキストを抽出
             text += page.extract_text()
     return text
+
+def extract_text_from_image_pdf(pdf_path): # OCRを使用して日本語テキストを抽出する関数
+    images = convert_from_path(pdf_path)  # PDFを画像に変換
+    text = ""
+    for image in images:
+        text += pytesseract.image_to_string(image, lang='jpn')  # 画像から日本語テキストを抽出
+    return text
+
+def extract_text_from_pdf(pdf_path):
+    if is_searchable_pdf(pdf_path):  # PDFがサーチャブルな場合
+        return extract_text_from_serchable_pdf(pdf_path)  # サーチャブルPDFからテキストを抽出
+    else:  # PDFが非サーチャブルな場合
+        return extract_text_from_image_pdf(pdf_path)  # OCRを使用して日本語テキストを抽出
 
 def generate_title_with_chatgpt(system_prompt, user_prompt, model='gpt-3.5-turbo'):  # ChatGPTを使って題名を生成する関数
     response = openai.ChatCompletion.create(  # ChatGPT APIにリクエストを送る
@@ -55,11 +89,11 @@ def rename_pdf_files(input_folder, output_folder):  # PDFファイルのファ�
     return renamed_files
 
 def display_summary(renamed_files):  # リネームのサマリーを表示する関数
-    summary = "Renamed Files:\n"
+    summary = "変更済みのファイル:\n"
     for old_name, new_name in renamed_files:  # リネームされたファイルのリストから、古いファイル名と新しいファイル名を取得
         summary += f"{old_name} -> {new_name}\n"
 
-    summary += "\nProcess completed successfully!"
+    summary += "\nファイル名の変更が完了しました"
 
     # ポップアップウィンドウを表示
     root = tk.Tk()  # tkinterのルートウィンドウを作成
