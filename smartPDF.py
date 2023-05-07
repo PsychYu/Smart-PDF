@@ -91,11 +91,14 @@ def generate_title_with_chatgpt(system_prompt, user_prompt, model='gpt-3.5-turbo
 def rename_pdf_files(input_folder, output_folder):  # PDFファイルのファイル名をリネームする関数
     os.makedirs(output_folder, exist_ok=True)  # 出力フォルダを作成（既に存在する場合は何もしない）
     renamed_files = []  # リネームされたファイルのリストを初期化
+    words_count = config.get('DEFAULT', 'words_count')  # 送信する文字数を取得
 
     for pdf_file in Path(input_folder).glob("*.pdf"):  # 入力フォルダ内のPDFファイルを順番に処理
         text = extract_text_from_pdf(str(pdf_file)).replace('\n', '')  # テキストを抽出し、改行を削除
+        # textの冒頭から指定した文字数までを抽出
+        text_to_send = text[:int(words_count)]
         system_prompt = f"あなたは、短くてわかりやすいファイル名を提案する専門家です。ファイル名は日本語で、体言止めで表現し、簡潔にしてください。"  # システムプロンプトを生成
-        user_prompt = f"このPDF文書の内容に基づいて、適切なファイル名を提案してください。内容は次のとおりです: {text[:1000]}"  # ユーザープロンプトを生成
+        user_prompt = f"このPDF文書の内容に基づいて、適切なファイル名を提案してください。内容は次のとおりです: {text_to_send}..."  # ユーザープロンプトを生成
         print("ChatGPT APIを呼び出し中です・・・")
         title = generate_title_with_chatgpt(system_prompt, user_prompt)  # ChatGPTを使って題名を生成
         if(title is None):  # 題名が生成できなかった場合
