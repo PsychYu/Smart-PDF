@@ -16,7 +16,7 @@ config = configparser.ConfigParser() # configparserをインスタンス化
 if os.path.exists('settings.ini'): # settings.iniが存在する場合は読み込む
     config.read('settings.ini')
 else: # settings.iniが存在しない場合は作成する
-    config['DEFAULT'] = {'OpenAI_API_KEY': '', 'input_folder_path': '', 'output_folder_path': '', 'path_tesseract': 'C:\Program Files\Tesseract-OCR', 'path_poppler': Path(__file__).parent.absolute() / "poppler/bin"}
+    config['DEFAULT'] = {'OpenAI_API_KEY': '', 'input_folder_path': '', 'output_folder_path': '', 'path_tesseract': 'C:\Program Files\Tesseract-OCR', 'path_poppler': Path(__file__).parent.absolute() / "poppler/bin", "words_count": 1000}
     with open('settings.ini', 'w') as configfile:
         config.write(configfile)
 
